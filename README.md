@@ -2,14 +2,19 @@
 
 ## Portfolio Copilot
 
-The dashboard includes a read-only GenAI copilot. It sends a compact, project-scoped view of the dashboard data to `/api/copilot`; the model provider key is kept server-side by the Vite middleware. Gemini is supported as an alternative to OpenAI.
+The dashboard includes a read-only GenAI copilot. It sends a compact, project-scoped view of the dashboard data to `/api/copilot`; AWS credentials stay server-side in the AWS SDK credential chain. Amazon Bedrock with `openai.gpt-oss-120b-1:0` is the default provider.
 
-To enable it locally, create a `.env` file with:
+To enable Bedrock locally, create a `.env` file with:
 
 ```text
-OPENAI_API_KEY=your-key
-OPENAI_MODEL=gpt-4o-mini
+AWS_REGION=ap-south-1
+BEDROCK_MODEL_ID=openai.gpt-oss-120b-1:0
+AI_PROVIDER=bedrock
 ```
+
+Authenticate with AWS CLI/SSO before starting Vite. If using temporary access keys, also set `AWS_SESSION_TOKEN`.
+
+If the chatbot reports an expired security token, refresh the credentials in the default AWS profile or run `aws sso login --profile <profile>`, then restart Vite. The AWS SDK reads the standard AWS credential chain; credentials are not stored in the React client.
 
 Alternatively, use Gemini:
 
