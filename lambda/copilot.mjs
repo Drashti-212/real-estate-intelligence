@@ -67,6 +67,12 @@ export const handler = async (event) => {
     return reply(200, { answer: result.answer, sources: result.sources });
   } catch (error) {
     console.error("Bedrock copilot error", error);
-    return reply(502, { error: "Bedrock request failed. Check the Lambda IAM permission and CloudWatch logs." });
+    const errorName = error?.name || "UnknownError";
+    const errorMessage = error?.message || "Bedrock request failed.";
+    return reply(502, {
+      error: `Bedrock request failed: ${errorName}: ${errorMessage}`,
+      region: process.env.AWS_REGION || "not configured",
+      model: modelId,
+    });
   }
 };

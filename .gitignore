@@ -4,3 +4,5 @@ dist/
 .env.*
 !.env.example
 data/chatbot-logs.jsonl
+lambda/node_modules/
+lambda/copilot.zip
