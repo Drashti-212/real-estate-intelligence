@@ -16,6 +16,18 @@ Authenticate with AWS CLI/SSO before starting Vite. If using temporary access ke
 
 If the chatbot reports an expired security token, refresh the credentials in the default AWS profile or run `aws sso login --profile <profile>`, then restart Vite. The AWS SDK reads the standard AWS credential chain; credentials are not stored in the React client.
 
+### Amplify deployment
+
+Amplify Hosting serves the Vite build as static files and does not run `vite.config.js` middleware. Deploy `lambda/copilot.mjs` as a Lambda function behind an API Gateway `POST /copilot` route, attach an IAM role with `bedrock:InvokeModel` for the configured model, and set these Lambda environment variables:
+
+```text
+AWS_REGION=ap-south-1
+BEDROCK_MODEL_ID=openai.gpt-oss-120b-1:0
+ALLOWED_ORIGIN=https://your-amplify-domain.amplifyapp.com
+```
+
+Set `VITE_COPILOT_API_URL` in the Amplify build environment to the deployed API URL, for example `https://your-api-id.execute-api.ap-south-1.amazonaws.com/copilot`, then redeploy the frontend. Do not put AWS access keys in Amplify frontend environment variables.
+
 Alternatively, use Gemini:
 
 ```text

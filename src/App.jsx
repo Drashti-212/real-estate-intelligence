@@ -833,7 +833,8 @@ function CopilotPanel({ DATA, projectId, onClose }) {
     setMessages((current) => [...current, { role: "user", content: trimmed }]);
     setLoading(true);
     try {
-      const response = await fetch("/api/copilot", {
+      const copilotApiUrl = import.meta.env.VITE_COPILOT_API_URL || "/api/copilot";
+      const response = await fetch(copilotApiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: trimmed, context: buildCopilotContext(DATA, projectId) }),
@@ -843,9 +844,10 @@ function CopilotPanel({ DATA, projectId, onClose }) {
       try {
         payload = JSON.parse(responseText);
       } catch {
-        throw new Error(responseText.trimStart().startsWith("<!DOCTYPE")
-          ? "Chatbot backend is not deployed. Connect /api/copilot to an API Gateway or Lambda endpoint in Amplify."
-          : "Chatbot returned an invalid response.");
+        const contentType = response.headers.get("content-type") || "";
+        throw new Error(responseText.trimStart().startsWith("<") || contentType.includes("text/html")
+          ? `Chatbot API is not connected. Configure VITE_COPILOT_API_URL to your deployed Lambda/API Gateway endpoint (HTTP ${response.status}).`
+          : `Chatbot returned an invalid response (HTTP ${response.status}).`);
       }
       if (!response.ok) throw new Error(payload.error || "Copilot request failed.");
       setMessages((current) => [...current, { role: "assistant", content: payload.answer, sources: payload.sources }]);
