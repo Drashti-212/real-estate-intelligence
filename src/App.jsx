@@ -838,7 +838,15 @@ function CopilotPanel({ DATA, projectId, onClose }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: trimmed, context: buildCopilotContext(DATA, projectId) }),
       });
-      const payload = await response.json();
+      const responseText = await response.text();
+      let payload;
+      try {
+        payload = JSON.parse(responseText);
+      } catch {
+        throw new Error(responseText.trimStart().startsWith("<!DOCTYPE")
+          ? "Chatbot backend is not deployed. Connect /api/copilot to an API Gateway or Lambda endpoint in Amplify."
+          : "Chatbot returned an invalid response.");
+      }
       if (!response.ok) throw new Error(payload.error || "Copilot request failed.");
       setMessages((current) => [...current, { role: "assistant", content: payload.answer, sources: payload.sources }]);
     } catch (error) {
