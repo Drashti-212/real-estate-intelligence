@@ -4,9 +4,6 @@ const client = new BedrockRuntimeClient({ region: process.env.AWS_REGION });
 const modelId = process.env.BEDROCK_MODEL_ID || "openai.gpt-oss-120b-1:0";
 const headers = {
   "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || "*",
-  "Access-Control-Allow-Headers": "content-type",
-  "Access-Control-Allow-Methods": "OPTIONS,POST",
 };
 
 const reply = (statusCode, body) => ({ statusCode, headers, body: JSON.stringify(body) });
