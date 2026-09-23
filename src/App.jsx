@@ -859,14 +859,14 @@ function CopilotPanel({ DATA, projectId, onClose }) {
   };
 
   return (
-    <div style={{ position: "fixed", right: 20, bottom: 20, width: 380, maxWidth: "calc(100vw - 40px)", background: SURFACE, border: `1px solid ${LINE}`, borderRadius: 12, boxShadow: "0 14px 40px rgba(0,0,0,.35)", zIndex: 10 }}>
+    <div style={{ position: "fixed", right: 20, bottom: 20, width: 520, maxWidth: "calc(100vw - 32px)", background: SURFACE, border: `1px solid ${LINE}`, borderRadius: 12, boxShadow: "0 14px 40px rgba(0,0,0,.35)", zIndex: 10 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${LINE}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: INK, fontWeight: 700, fontSize: 13.5 }}>
           <MessageCircle size={16} color={BLUE} /> Portfolio Copilot
         </div>
         <button onClick={onClose} aria-label="Close copilot" style={{ border: "none", background: "transparent", color: SLATE, cursor: "pointer" }}><X size={16} /></button>
       </div>
-      <div style={{ maxHeight: 360, overflowY: "auto", padding: 14 }}>
+      <div style={{ maxHeight: 520, minHeight: 280, overflowY: "auto", padding: 18 }}>
         {messages.length === 0 && <div style={{ color: SLATE, fontSize: 12.5, lineHeight: 1.5 }}>Ask about project health, budget utilization, milestones, or risks. Answers use the dashboard&apos;s sample/calculated data.</div>}
         {messages.map((message, index) => (
           <div key={index} style={{ marginBottom: 12, color: message.role === "error" ? CORAL : INK, fontSize: 12.5, lineHeight: 1.5 }}>

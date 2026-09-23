@@ -4,6 +4,8 @@
 
 The dashboard includes a read-only GenAI copilot. It sends a compact, project-scoped view of the dashboard data to `/api/copilot`; AWS credentials stay server-side in the AWS SDK credential chain. Amazon Bedrock with `openai.gpt-oss-120b-1:0` is the default provider.
 
+See [docs/CHATBOT_CAPABILITIES.md](docs/CHATBOT_CAPABILITIES.md) for the client-facing supported questions, data basis, and limitations.
+
 To enable Bedrock locally, create a `.env` file with:
 
 ```text
