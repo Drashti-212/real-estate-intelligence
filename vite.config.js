@@ -31,7 +31,18 @@ function copilotApi(env) {
   const useBedrock = env.AI_PROVIDER === "bedrock" || (
     !env.OPENAI_API_KEY && !env.GEMINI_API_KEY && env.AWS_REGION && env.BEDROCK_MODEL_ID
   );
-  const bedrockClient = useBedrock ? new BedrockRuntimeClient({ region: env.AWS_REGION }) : null;
+  // loadEnv() does not populate process.env, so pass any AWS keys from .env to the client explicitly.
+  // Without them the SDK falls back to its default lookup (shell env vars, ~/.aws, SSO).
+  const awsCredentials = env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY
+    ? {
+        accessKeyId: env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+        ...(env.AWS_SESSION_TOKEN ? { sessionToken: env.AWS_SESSION_TOKEN } : {}),
+      }
+    : undefined;
+  const bedrockClient = useBedrock
+    ? new BedrockRuntimeClient({ region: env.AWS_REGION, ...(awsCredentials ? { credentials: awsCredentials } : {}) })
+    : null;
   const chatbotMemory = loadChatbotMemory();
 
   return {
@@ -102,7 +113,7 @@ function copilotApi(env) {
                   { role: "system", content: systemPrompt },
                   { role: "user", content: userPrompt },
                 ],
-                max_tokens: 700,
+                max_tokens: 2500, // reasoning models spend part of the budget on hidden reasoning; 700 truncated the JSON answer
                 temperature: 0.1,
               }),
             }));
@@ -172,8 +183,10 @@ function copilotApi(env) {
           ? completion.candidates?.[0]?.content?.parts?.[0]?.text
           : completion.choices?.[0]?.message?.content;
         let result;
+        const finishReason = completion.choices?.[0]?.finish_reason;
         try {
-          const rawContent = content || "";
+          // Reasoning models may prefix the answer with <reasoning>...</reasoning>; drop it before parsing.
+          const rawContent = (content || "").replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "").trim();
           try {
             result = JSON.parse(rawContent);
           } catch {
@@ -182,10 +195,28 @@ function copilotApi(env) {
             result = JSON.parse(rawContent.slice(jsonStart, jsonEnd + 1));
           }
         } catch {
-          response.statusCode = 502;
-          response.setHeader("Content-Type", "application/json");
-          response.end(JSON.stringify({ error: "Model returned an invalid copilot response." }));
-          return;
+          const plain = (content || "").replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "").trim();
+          if (plain && finishReason !== "length") {
+            // The model answered in plain text instead of JSON: show it rather than failing.
+            result = { answer: plain, sources: [] };
+          } else {
+            void writeChatbotLog({
+              type: "error",
+              provider: useBedrock ? "bedrock" : useOllama ? "ollama" : useGemini ? "gemini" : "openai",
+              model,
+              question: body.question.trim(),
+              error: `Unparseable model response (finish_reason: ${finishReason || "unknown"})`,
+              rawContent: String(content ?? "").slice(0, 4000),
+            });
+            response.statusCode = 502;
+            response.setHeader("Content-Type", "application/json");
+            response.end(JSON.stringify({
+              error: finishReason === "length"
+                ? "The model's answer was cut off before it finished. Try a narrower question."
+                : "Model returned an invalid copilot response (empty or unreadable). Details were saved to data/chatbot-logs.jsonl.",
+            }));
+            return;
+          }
         }
 
         if (typeof result.answer !== "string" || !Array.isArray(result.sources)) {
